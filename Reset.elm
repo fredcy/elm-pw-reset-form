@@ -10,7 +10,6 @@ import StartApp exposing (App, start)
 import String
 import Task
 
-import Lib exposing (focusMailbox)
 import PasswordField
 
 app : StartApp.App Model
@@ -39,7 +38,11 @@ pwStrengthActions : Signal Action
 pwStrengthActions =
   Signal.map (\i -> UpdateStrength i) pwStrength
 
--- Send direction to focus on element
+-- Send direction to focus on element. In order to use as an Effect we need to
+-- wrap the focus port with a Mailbox.
+focusMailbox : Signal.Mailbox String
+focusMailbox = Signal.mailbox ""
+
 port focus : Signal String
 port focus = focusMailbox.signal
              
