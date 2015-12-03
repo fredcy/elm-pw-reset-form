@@ -1,4 +1,4 @@
-module PasswordField where
+module PasswordField (Model, Action, init, update, view) where
 
 import Effects exposing (Effects)
 import Html exposing (..)
@@ -18,6 +18,9 @@ type Action = NoOp
             | SetPassword String
             | SetShowclear Bool
 
+
+-- The update function receives `focusEffect`, a function that creates an Effect
+-- for focusing on this particular form element.
 update : (Action -> Effects Action) -> Action -> Model -> (Model, Effects Action)
 update focusEffect action model =
   case action of
@@ -26,6 +29,7 @@ update focusEffect action model =
     SetShowclear b -> ( { model | showclear = b }, focusEffect NoOp)
                       
 
+-- We separate the static properties from those in the model.                      
 type alias Props =
   { name : String
   , label : String
@@ -53,4 +57,3 @@ view address props model =
                   ]
           []
         ]  
-

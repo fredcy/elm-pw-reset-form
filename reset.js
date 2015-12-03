@@ -1,5 +1,5 @@
 (function () {
-
+    // Find the legacy form so we can scape data from it and hide it.
     var formId = "resetform";
     var form = document.getElementById(formId);
     if (form == null) {
@@ -22,32 +22,22 @@
         formname: getValue("input[name=_formname]")
     };
 
-    // Scrape the flash message and any error messages sent by the server. (kluge)
-    var status = { flash: [], errors: [] };
-    var flashElmts = document.getElementsByClassName("flash");
-    for (var i = 0; i < flashElmts.length; i++) {
-        status.flash.push(flashElmts[i].innerHTML)
-        flashElmts[i].style.display = "none";
-        flashElmts[i].innerHTML = "";
-    }
-    var errorElmts = document.getElementsByClassName("error");
-    for (var i = 0; i < errorElmts.length; i++) {
-        status.errors.push(errorElmts[i].innerHTML);
-    }
-
     var div = document.getElementById("elm");
-    var app = Elm.embed(Elm.Reset, div, { pwStrength: 0, formInfo: formInfo, status: status });
+    var app = Elm.embed(Elm.Reset, div, { pwStrength: 0, formInfo: formInfo });
 
-    // Site-specific vocabulary: words treated as extra dictionary.
-    var other_inputs = ["imsa", "titan", "imsa.edu", "imsaedu", "illinoismath"];
+    if (typeof zxcvbn !== 'undefined') {
+	// Listen for changes to password value and send back evaluations.
+	app.ports.pwChanges.subscribe(function(pwValue) {
+            var result = zxcvbn(pwValue);
+            //window.console.log("zxcvbn", result);
+            app.ports.pwStrength.send(result.score);
+            return result.score;
+	});
+    } else {
+	console.log("ERROR: zxcvbn not defined; See Makefile");
+    }
 
-    app.ports.pwChanges.subscribe(function(pwValue) {
-        var result = zxcvbn(pwValue, other_inputs);
-        //window.console.log("zxcvbn", result);
-        app.ports.pwStrength.send(result.score);
-        return result.score;
-    });
-
+    // Listen for focus requests.
     app.ports.focus.subscribe(function(selector) {
         //window.console.log("focus", selector);
         setTimeout(function() {

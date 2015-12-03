@@ -7,11 +7,10 @@
         <link rel="stylesheet" href="style.css">
     </head>
     <body>
-            <div class="flash">Test "flash" message</div>
+            <!-- dummy version of legacy password-change form build by server -->
             <form action="https://httpbin.org/post" id="resetform" method="post">
                     <input id="password" name="password" type="password">
-                    <div class="error">test error one</div>
-                    <div class="error">test error two</div>
+                    <input id="password2" name="password2" type="password">
                     <input name="_formkey" type="hidden" value="1dc813dc-f7db-4fdf-862d-0af2b1c8b4ca">
                     <input name="_formname" type="hidden" value="default">
             </form>
@@ -19,7 +18,7 @@
             <div id="elm"></div>
             
         <script type="text/javascript" src="reset-elm.js"></script>
+        <script type="text/javascript" src="zxcvbn.js"></script>
         <script type="text/javascript" src="reset.js"></script>
-        <script type="text/javascript" src="zxcvbn.js" async></script>
     </body>
 </html>

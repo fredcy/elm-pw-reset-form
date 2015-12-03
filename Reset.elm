@@ -43,18 +43,12 @@ pwStrengthActions =
 port focus : Signal String
 port focus = focusMailbox.signal
              
--- Get static information about form
+-- Get static information about form, scraped from the legacy form.
 type alias FormInfo = { action : String
                       , formkey : String
                       , formname : String
                       }
 port formInfo : FormInfo
-
--- Get static information about status messages
-type alias Status = { flash : List (String)
-                    , errors : List (String)
-                    }
-port status : Status
 
 
 type alias Model =
@@ -83,13 +77,18 @@ type Action =
   | UpdateConfirmed Bool
   | UpdateStrength Int
 
+-- Create a task that sends the password value over the port for evaluation.
 sendPwChange : String -> Effects Action
 sendPwChange pw =
   Signal.send pwChangesMailbox.address pw |> Task.map (always NoOp) |> Effects.task
 
+-- Create a task that sends a javascript element-selector to the port for
+-- requesting focus. Since we pass this to the sub-model we make the action a
+-- parameter also.
 sendFocus: String -> a -> Effects a
 sendFocus selector action =
   Signal.send focusMailbox.address selector |> Task.map (always action) |> Effects.task
+
 
 update : Action -> Model -> (Model, Effects Action)
 update action model =
@@ -112,11 +111,11 @@ update action model =
     UpdateStrength i ->
       ({ model | strength = i }, Effects.none)
 
+
 view : Signal.Address Action -> Model -> Html
 view address model =
   div []
-      [ statusDisplay
-      , inputForm address model
+      [ inputForm address model
       --, debugDisplay model
       ]
 
@@ -163,14 +162,6 @@ inputForm address model =
           , input [ type' "hidden", name "_formkey", value formInfo.formkey ] []
           ]
       
-statusDisplay : Html
-statusDisplay =
-  let item str = if str == "" then Nothing else Just <| li [] [ text str ]
-  in div [ class "status" ]
-     [ ul [ class "flashes" ] <| List.filterMap item status.flash
-     , ul [ class "errors" ] <| List.filterMap item status.errors
-     ]
-
 strengthDisplay : Int -> Html
 strengthDisplay strength =
   let
@@ -204,6 +195,7 @@ submitButton model =
     text ""
 
 
+-- Evaluate the proposed password against the absolute local requirements.
 validPassword : String -> Result String ()
 validPassword str =
   if String.contains "'" str then
@@ -215,6 +207,7 @@ validPassword str =
             else 
               Ok ()
 
+-- Is the data ready for submitting back to the server?
 ready : Model -> Bool
 ready model =
   let valid = case validPassword model.password.password of
