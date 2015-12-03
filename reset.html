@@ -1,0 +1,25 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Password change</title>
+        <link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.6.0/pure-min.css">
+        <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+            <div class="flash">Test "flash" message</div>
+            <form action="https://httpbin.org/post" id="resetform" method="post">
+                    <input id="password" name="password" type="password">
+                    <div class="error">test error one</div>
+                    <div class="error">test error two</div>
+                    <input name="_formkey" type="hidden" value="1dc813dc-f7db-4fdf-862d-0af2b1c8b4ca">
+                    <input name="_formname" type="hidden" value="default">
+            </form>
+
+            <div id="elm"></div>
+            
+        <script type="text/javascript" src="reset-elm.js"></script>
+        <script type="text/javascript" src="reset.js"></script>
+        <script type="text/javascript" src="zxcvbn.js" async></script>
+    </body>
+</html>
