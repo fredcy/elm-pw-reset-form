@@ -85,7 +85,7 @@ sendPwChange : String -> Effects Action
 sendPwChange pw =
   Signal.send pwChangesMailbox.address pw |> Task.map (always NoOp) |> Effects.task
 
--- Create a task that sends a javascript element-selector to the port for
+-- Create a effect that sends a javascript element-selector to the port for
 -- requesting focus. Since we pass this to the sub-model we make the action a
 -- parameter also.
 sendFocus: String -> a -> Effects a
