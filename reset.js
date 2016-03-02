@@ -29,9 +29,7 @@
 	// Listen for changes to password value and send back evaluations.
 	app.ports.pwChanges.subscribe(function(pwValue) {
             var result = zxcvbn(pwValue);
-            //window.console.log("zxcvbn", result);
             app.ports.pwStrength.send(result.score);
-            return result.score;
 	});
     } else {
 	console.log("ERROR: zxcvbn not defined; See Makefile");
