@@ -1,6 +1,6 @@
 elm-stuff/
 index.html
 reset-elm.js
-reset-elm-ugly.js
-reset-ugly.html
+reset-elm.min.js
+reset-min.html
 zxcvbn.js
