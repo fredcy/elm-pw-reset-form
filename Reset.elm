@@ -33,7 +33,7 @@ port pwStrength : (Int -> msg) -> Sub msg
 port focus : String -> Cmd msg
              
 
-subscriptions : Model -> Sub Action
+subscriptions : Model -> Sub Msg
 subscriptions model =
   pwStrength UpdateStrength
              
@@ -47,46 +47,43 @@ type alias Model =
   }
 
 
-init : FormInfo -> (Model, Cmd Action)
+init : FormInfo -> (Model, Cmd Msg)
 init flags =
   ( Model PasswordField.init PasswordField.init False 0 flags
   , sendFocus "#elmResetForm input[name=password]" )
 
 
-type Action =
-  NoOp
-  | UpdatePassword PasswordField.Action
-  | UpdatePassword2 PasswordField.Action
+type Msg =
+  UpdatePassword PasswordField.Msg
+  | UpdatePassword2 PasswordField.Msg
   | UpdateConfirmed Bool
   | UpdateStrength Int
 
--- Create a command that sends the password value over the port for evaluation.
-sendPwChange : String -> Cmd Action
-sendPwChange pw =
-  pwChanges pw  -- ??? map to NoOp
 
--- Create a effect that sends a javascript element-selector to the port for
--- requesting focus. Since we pass this to the sub-model we make the action a
--- parameter also.
+-- Create a command that sends the password value over the port for evaluation.
+sendPwChange : String -> Cmd Msg
+sendPwChange pw =
+  pwChanges pw
+
+-- Create a command that sends a javascript element-selector to the port for
+-- requesting focus.
 sendFocus: String -> Cmd a
 sendFocus selector =
   focus selector
 
 
-update : Action -> Model -> (Model, Cmd Action)
-update action model =
-  case action of
-    NoOp ->
-      (model, Cmd.none)
-    UpdatePassword pfAction ->
-      let focusEffect = sendFocus "#elmResetForm input[name=password]"
-          (password', fx) = PasswordField.update focusEffect pfAction model.password
+update : Msg -> Model -> (Model, Cmd Msg)
+update msg model =
+  case msg of
+    UpdatePassword pfMsg ->
+      let focusCmd = sendFocus "#elmResetForm input[name=password]"
+          (password', fx) = PasswordField.update focusCmd pfMsg model.password
           model' = { model | password = password' }
-          pwEffect = sendPwChange model'.password.password
-      in (model', Cmd.batch [Cmd.map UpdatePassword fx, pwEffect])
-    UpdatePassword2 pfAction ->
-      let focusEffect = sendFocus "#elmResetForm input[name=password2]"
-          (password2', fx) = PasswordField.update focusEffect pfAction model.password2
+          pwCmd = sendPwChange model'.password.password
+      in (model', Cmd.batch [Cmd.map UpdatePassword fx, pwCmd])
+    UpdatePassword2 pfMsg ->
+      let focusCmd = sendFocus "#elmResetForm input[name=password2]"
+          (password2', fx) = PasswordField.update focusCmd pfMsg model.password2
           model' = { model | password2 = password2' }
       in (model', Cmd.map UpdatePassword2 fx)
     UpdateConfirmed b ->
@@ -95,14 +92,14 @@ update action model =
       ({ model | strength = i }, Cmd.none)
 
 
-view : Model -> Html Action
+view : Model -> Html Msg
 view model =
   div []
       [ inputForm model
       --, debugDisplay model
       ]
 
-inputForm : Model -> Html Action
+inputForm : Model -> Html Msg
 inputForm  model =
   let
     message = case validPassword model.password.password of
@@ -143,7 +140,7 @@ inputForm  model =
           , input [ type' "hidden", name "_formkey", value model.formInfo.formkey ] []
           ]
       
-strengthDisplay : Int -> Html Action
+strengthDisplay : Int -> Html Msg
 strengthDisplay strength =
   let
     score = strength
@@ -159,7 +156,7 @@ strengthDisplay strength =
     div [ class ("score-bar " ++ class') ]
           [ text message ]
 
-debugDisplay : Model -> Html Action
+debugDisplay : Model -> Html Msg
 debugDisplay model =
   div []
         [ h3 [] [ text "Model" ]
@@ -168,7 +165,7 @@ debugDisplay model =
         , toString model.strength |> text
         ]
 
-submitButton : Model -> Html Action
+submitButton : Model -> Html Msg
 submitButton model =
   if ready model then
     input [ type' "submit" ] []

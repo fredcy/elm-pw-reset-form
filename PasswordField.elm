@@ -1,4 +1,4 @@
-module PasswordField exposing (Model, Action, init, update, view)
+module PasswordField exposing (Model, Msg, init, update, view)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -13,19 +13,18 @@ init : Model
 init = Model "" False
 
 
-type Action = NoOp
-            | SetPassword String
+type Msg =
+            SetPassword String
             | SetShowclear Bool
 
 
--- The update function receives `focusEffect`, a function that creates an Effect
+-- The update function receives `focusCmd`, a function that creates a command
 -- for focusing on this particular form element.
-update : Cmd Action -> Action -> Model -> (Model, Cmd Action)
-update focusEffect action model =
-  case action of
-    NoOp -> (model, Cmd.none)
+update : Cmd Msg -> Msg -> Model -> (Model, Cmd Msg)
+update focusCmd msg model =
+  case msg of
     SetPassword pw -> ( { model | password = pw }, Cmd.none)
-    SetShowclear b -> ( { model | showclear = b }, focusEffect)
+    SetShowclear b -> ( { model | showclear = b }, focusCmd)
                       
 
 -- We separate the static properties from those in the model.                      
@@ -34,7 +33,7 @@ type alias Props =
   , label : String
   }
 
-view : Props -> Model -> Html Action
+view : Props -> Model -> Html Msg
 view props model =
   let
     showId = props.name ++ "-show"
