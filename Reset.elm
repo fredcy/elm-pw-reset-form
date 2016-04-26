@@ -1,58 +1,24 @@
-module Reset where
+module Reset exposing (..)
 
-import Effects exposing (Effects, Never)
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Html.Events exposing (on, targetValue, targetChecked)
+import Html.Events exposing (..)
 import Result exposing (andThen)
-import Signal exposing (Mailbox, constant)
-import StartApp exposing (App, start)
 import String
 import Task
 
 import PasswordField
+import Ports
 
-app : StartApp.App Model
-app = StartApp.start { init = init, view = view, update = update, inputs = [pwStrengthActions] }
-
-main : Signal Html
+main : Program Flags
 main =
-  app.html
-     
-port tasks : Signal (Task.Task Never ())
-port tasks =
-  app.tasks
+  Html.Program { init = init, view = view, update = update, subscriptions = subscriptions }
 
 
--- Send out password values for evaluation.
-pwChangesMailbox : Mailbox String
-pwChangesMailbox = Signal.mailbox ""
-
-port pwChanges : Signal String
-port pwChanges = pwChangesMailbox.signal |> Signal.dropRepeats
-
--- Get back evaluations of password strength.
-port pwStrength : Signal Int
-
-pwStrengthActions : Signal Action
-pwStrengthActions =
-  Signal.map (\i -> UpdateStrength i) pwStrength
-
--- Send direction to focus on element. In order to use as an Effect we need to
--- wrap the focus port with a Mailbox.
-focusMailbox : Signal.Mailbox String
-focusMailbox = Signal.mailbox ""
-
-port focus : Signal String
-port focus = focusMailbox.signal
+subscriptions : Model -> Sub Action
+subscriptions model =
+  pwStrength UpdateStrength
              
--- Get static information about form, scraped from the legacy form.
-type alias FormInfo = { action : String
-                      , formkey : String
-                      , formname : String
-                      }
-port formInfo : FormInfo
-
 
 type alias Model =
   { password : PasswordField.Model
@@ -69,7 +35,7 @@ defaultModel =
   in
     Model password password2 False 0
 
-init : (Model, Effects Action)
+init : (Model, Cmd Action)
 init = (defaultModel, sendFocus "#elmResetForm input[name=password]" NoOp)
 
 
@@ -80,50 +46,51 @@ type Action =
   | UpdateConfirmed Bool
   | UpdateStrength Int
 
--- Create a task that sends the password value over the port for evaluation.
-sendPwChange : String -> Effects Action
+-- Create a command that sends the password value over the port for evaluation.
+sendPwChange : String -> Cmd Action
 sendPwChange pw =
-  Signal.send pwChangesMailbox.address pw |> Task.map (always NoOp) |> Effects.task
+  pwChanges pw  -- ??? map to NoOp
 
 -- Create a effect that sends a javascript element-selector to the port for
 -- requesting focus. Since we pass this to the sub-model we make the action a
 -- parameter also.
-sendFocus: String -> a -> Effects a
+sendFocus: String -> a -> Cmd a
 sendFocus selector action =
-  Signal.send focusMailbox.address selector |> Task.map (always action) |> Effects.task
+  focus selector
+  Signal.send focusMailbox.address selector |> Task.map (always action) |> Cmd.task
 
 
-update : Action -> Model -> (Model, Effects Action)
+update : Action -> Model -> (Model, Cmd Action)
 update action model =
   case action of
     NoOp ->
-      (model, Effects.none)
+      (model, Cmd.none)
     UpdatePassword pfAction ->
       let focusEffect = sendFocus "#elmResetForm input[name=password]"
           (password', fx) = PasswordField.update focusEffect pfAction model.password
           model' = { model | password = password' }
           pwEffect = sendPwChange model'.password.password
-      in (model', Effects.batch [Effects.map UpdatePassword fx, pwEffect])
+      in (model', Cmd.batch [Cmd.map UpdatePassword fx, pwEffect])
     UpdatePassword2 pfAction ->
       let focusEffect = sendFocus "#elmResetForm input[name=password2]"
           (password2', fx) = PasswordField.update focusEffect pfAction model.password2
           model' = { model | password2 = password2' }
-      in (model', Effects.map UpdatePassword2 fx)
+      in (model', Cmd.map UpdatePassword2 fx)
     UpdateConfirmed b ->
-      ({ model | confirmed = b }, Effects.none)
+      ({ model | confirmed = b }, Cmd.none)
     UpdateStrength i ->
-      ({ model | strength = i }, Effects.none)
+      ({ model | strength = i }, Cmd.none)
 
 
-view : Signal.Address Action -> Model -> Html
-view address model =
+view : Model -> Html Action
+view model =
   div []
-      [ inputForm address model
+      [ inputForm model
       --, debugDisplay model
       ]
 
-inputForm : Signal.Address Action -> Model -> Html
-inputForm address model =
+inputForm : Model -> Html Action
+inputForm  model =
   let
     message = case validPassword model.password.password of
                 Err msg -> msg
@@ -136,18 +103,16 @@ inputForm address model =
                  ""
     props = { name = "password", label = "New password" }
     props2 = { name = "password2", label = "New password, again" }
-    pwaddress = Signal.forwardTo address UpdatePassword
-    pwaddress2 = Signal.forwardTo address UpdatePassword2
   in
     Html.form [ action formInfo.action, method "post", id "elmResetForm" ]
           [ ol []
-                 [ li [] [ PasswordField.view pwaddress props model.password
+                 [ li [] [ PasswordField.view props model.password |> map UpdatePassword
                          , if message /= "" then
                              div [ class "message" ] [ text message ]
                            else
                              strengthDisplay model.strength
                          ]
-                 , li [] [ PasswordField.view pwaddress2 props2 model.password2
+                 , li [] [ PasswordField.view props2 model.password2 |> map UpdatePassword2
                          , div [ class "message" ] [ text message2 ]
                          ]
                  , li []
@@ -156,7 +121,7 @@ inputForm address model =
                                 , id "accept"
                                 , name "accept"
                                 , checked model.confirmed
-                                , on "change" targetChecked (Signal.message address << UpdateConfirmed)
+                                , onCheck UpdateConfirmed
                                 ] []
                         ]
                  ]

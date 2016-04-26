@@ -1,9 +1,8 @@
-module PasswordField (Model, Action, init, update, view) where
+module PasswordField exposing (Model, Action, init, update, view)
 
-import Effects exposing (Effects)
 import Html exposing (..)
-import Html.Attributes exposing (checked, class, for, id, name, style, tabindex, type', value)
-import Html.Events exposing (on, targetValue, targetChecked)
+import Html.Attributes exposing (..)
+import Html.Events exposing (..)
 
 type alias Model =
   { password : String
@@ -21,11 +20,11 @@ type Action = NoOp
 
 -- The update function receives `focusEffect`, a function that creates an Effect
 -- for focusing on this particular form element.
-update : (Action -> Effects Action) -> Action -> Model -> (Model, Effects Action)
+update : (Action -> Cmd Action) -> Action -> Model -> (Model, Cmd Action)
 update focusEffect action model =
   case action of
-    NoOp -> (model, Effects.none)
-    SetPassword pw -> ( { model | password = pw }, Effects.none)
+    NoOp -> (model, Cmd.none)
+    SetPassword pw -> ( { model | password = pw }, Cmd.none)
     SetShowclear b -> ( { model | showclear = b }, focusEffect NoOp)
                       
 
@@ -35,8 +34,8 @@ type alias Props =
   , label : String
   }
 
-view : Signal.Address Action -> Props -> Model -> Html
-view address props model =
+view : Props -> Model -> Html Action
+view props model =
   let
     showId = props.name ++ "-show"
   in
@@ -45,14 +44,14 @@ view address props model =
           , input [ type' (if model.showclear then "text" else "password")
                   , value model.password
                   , name props.name
-                  , on "input" targetValue (Signal.message address << SetPassword)
-                  ]
+                  , onInput SetPassword
+             ]
             []
           , label [ class "show", for showId ] [ text "show" ]
           , input [ type' "checkbox"
                   , id showId
                   , checked model.showclear
-                  , on "change" targetChecked (Signal.message address << SetShowclear)
+                  , onCheck SetShowclear
                   , tabindex -1   -- not reached via Tab key
                   ]
           []
