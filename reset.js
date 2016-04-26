@@ -23,7 +23,7 @@
     };
 
     var div = document.getElementById("elm");
-    var app = Elm.embed(Elm.Reset, div, { pwStrength: 0, formInfo: formInfo });
+    var app = Elm.Reset.embed(div, formInfo);
 
     if (typeof zxcvbn !== 'undefined') {
 	// Listen for changes to password value and send back evaluations.
