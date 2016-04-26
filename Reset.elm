@@ -1,6 +1,7 @@
-module Reset exposing (..)
+port module Reset exposing (..)
 
 import Html exposing (..)
+import Html.App as Html
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Result exposing (andThen)
@@ -8,12 +9,29 @@ import String
 import Task
 
 import PasswordField
-import Ports
 
-main : Program Flags
+
+-- Get static information about form, scraped from the legacy form.
+type alias FormInfo = { action : String
+                      , formkey : String
+                      , formname : String
+                      }
+
+
 main =
-  Html.Program { init = init, view = view, update = update, subscriptions = subscriptions }
+  Html.programWithFlags { init = init, view = view, update = update, subscriptions = subscriptions }
 
+
+-- Send out password values for evaluation.
+port pwChanges : String -> Cmd msg
+
+-- Get back evaluations of password strength.
+port pwStrength : (Int -> msg) -> Sub msg
+
+
+-- Send direction to focus on element.
+port focus : String -> Cmd msg
+             
 
 subscriptions : Model -> Sub Action
 subscriptions model =
@@ -24,19 +42,15 @@ type alias Model =
   { password : PasswordField.Model
   , password2 : PasswordField.Model
   , confirmed : Bool
-  , strength: Int
+  , strength : Int
+  , formInfo : FormInfo
   }
 
-defaultModel : Model
-defaultModel =
-  let
-    password = PasswordField.init
-    password2 = PasswordField.init
-  in
-    Model password password2 False 0
 
-init : (Model, Cmd Action)
-init = (defaultModel, sendFocus "#elmResetForm input[name=password]" NoOp)
+init : FormInfo -> (Model, Cmd Action)
+init flags =
+  ( Model PasswordField.init PasswordField.init False 0 flags
+  , sendFocus "#elmResetForm input[name=password]" )
 
 
 type Action =
@@ -54,10 +68,9 @@ sendPwChange pw =
 -- Create a effect that sends a javascript element-selector to the port for
 -- requesting focus. Since we pass this to the sub-model we make the action a
 -- parameter also.
-sendFocus: String -> a -> Cmd a
-sendFocus selector action =
+sendFocus: String -> Cmd a
+sendFocus selector =
   focus selector
-  Signal.send focusMailbox.address selector |> Task.map (always action) |> Cmd.task
 
 
 update : Action -> Model -> (Model, Cmd Action)
@@ -104,15 +117,15 @@ inputForm  model =
     props = { name = "password", label = "New password" }
     props2 = { name = "password2", label = "New password, again" }
   in
-    Html.form [ action formInfo.action, method "post", id "elmResetForm" ]
+    Html.form [ action model.formInfo.action, method "post", id "elmResetForm" ]
           [ ol []
-                 [ li [] [ PasswordField.view props model.password |> map UpdatePassword
+                 [ li [] [ PasswordField.view props model.password |> Html.map UpdatePassword
                          , if message /= "" then
                              div [ class "message" ] [ text message ]
                            else
                              strengthDisplay model.strength
                          ]
-                 , li [] [ PasswordField.view props2 model.password2 |> map UpdatePassword2
+                 , li [] [ PasswordField.view props2 model.password2 |> Html.map UpdatePassword2
                          , div [ class "message" ] [ text message2 ]
                          ]
                  , li []
@@ -126,11 +139,11 @@ inputForm  model =
                         ]
                  ]
           , if ready model then submitButton model else div [] []
-          , input [ type' "hidden", name "_formname", value formInfo.formname ] []
-          , input [ type' "hidden", name "_formkey", value formInfo.formkey ] []
+          , input [ type' "hidden", name "_formname", value model.formInfo.formname ] []
+          , input [ type' "hidden", name "_formkey", value model.formInfo.formkey ] []
           ]
       
-strengthDisplay : Int -> Html
+strengthDisplay : Int -> Html Action
 strengthDisplay strength =
   let
     score = strength
@@ -146,7 +159,7 @@ strengthDisplay strength =
     div [ class ("score-bar " ++ class') ]
           [ text message ]
 
-debugDisplay : Model -> Html
+debugDisplay : Model -> Html Action
 debugDisplay model =
   div []
         [ h3 [] [ text "Model" ]
@@ -155,7 +168,7 @@ debugDisplay model =
         , toString model.strength |> text
         ]
 
-submitButton : Model -> Html
+submitButton : Model -> Html Action
 submitButton model =
   if ready model then
     input [ type' "submit" ] []

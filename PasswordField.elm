@@ -20,12 +20,12 @@ type Action = NoOp
 
 -- The update function receives `focusEffect`, a function that creates an Effect
 -- for focusing on this particular form element.
-update : (Action -> Cmd Action) -> Action -> Model -> (Model, Cmd Action)
+update : Cmd Action -> Action -> Model -> (Model, Cmd Action)
 update focusEffect action model =
   case action of
     NoOp -> (model, Cmd.none)
     SetPassword pw -> ( { model | password = pw }, Cmd.none)
-    SetShowclear b -> ( { model | showclear = b }, focusEffect NoOp)
+    SetShowclear b -> ( { model | showclear = b }, focusEffect)
                       
 
 -- We separate the static properties from those in the model.                      
