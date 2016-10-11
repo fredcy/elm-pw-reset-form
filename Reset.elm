@@ -1,7 +1,6 @@
 port module Reset exposing (..)
 
 import Html exposing (..)
-import Html.App as Html
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Result exposing (andThen)
@@ -100,29 +99,29 @@ update msg model =
                 focusCmd =
                     sendFocus "#elmResetForm input[name=password]"
 
-                ( password', fx ) =
+                ( password_, fx ) =
                     PasswordField.update focusCmd pfMsg model.password
 
-                model' =
-                    { model | password = password' }
+                model_ =
+                    { model | password = password_ }
 
                 pwCmd =
-                    sendPwChange model'.password.password
+                    sendPwChange model_.password.password
             in
-                ( model', Cmd.batch [ Cmd.map UpdatePassword fx, pwCmd ] )
+                ( model_, Cmd.batch [ Cmd.map UpdatePassword fx, pwCmd ] )
 
         UpdatePassword2 pfMsg ->
             let
                 focusCmd =
                     sendFocus "#elmResetForm input[name=password2]"
 
-                ( password2', fx ) =
+                ( password2_, fx ) =
                     PasswordField.update focusCmd pfMsg model.password2
 
-                model' =
-                    { model | password2 = password2' }
+                model_ =
+                    { model | password2 = password2_ }
             in
-                ( model', Cmd.map UpdatePassword2 fx )
+                ( model_, Cmd.map UpdatePassword2 fx )
 
         UpdateConfirmed b ->
             ( { model | confirmed = b }, Cmd.none )
@@ -180,7 +179,7 @@ inputForm model =
                 , li []
                     [ label [ for "accept" ] [ text "Accept ITS Policy and Honor Code" ]
                     , input
-                        [ type' "checkbox"
+                        [ type_ "checkbox"
                         , id "accept"
                         , name "accept"
                         , checked model.confirmed
@@ -193,8 +192,8 @@ inputForm model =
                 submitButton model
               else
                 div [] []
-            , input [ type' "hidden", name "_formname", value model.formInfo.formname ] []
-            , input [ type' "hidden", name "_formkey", value model.formInfo.formkey ] []
+            , input [ type_ "hidden", name "_formname", value model.formInfo.formname ] []
+            , input [ type_ "hidden", name "_formkey", value model.formInfo.formkey ] []
             ]
 
 
@@ -204,7 +203,7 @@ strengthDisplay strength =
         score =
             strength
 
-        ( message, class' ) =
+        ( message, class_ ) =
             case score of
                 0 ->
                     ( "weak: too guessable", "score-0" )
@@ -224,7 +223,7 @@ strengthDisplay strength =
                 _ ->
                     ( "unknown", "score-error" )
     in
-        div [ class ("score-bar " ++ class') ]
+        div [ class ("score-bar " ++ class_) ]
             [ text message ]
 
 
@@ -241,7 +240,7 @@ debugDisplay model =
 submitButton : Model -> Html Msg
 submitButton model =
     if ready model then
-        input [ type' "submit" ] []
+        input [ type_ "submit" ] []
     else
         text ""
 

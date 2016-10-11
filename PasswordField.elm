@@ -55,7 +55,7 @@ view props model =
         div []
             [ label [ for props.name ] [ text props.label ]
             , input
-                [ type'
+                [ type_
                     (if model.showclear then
                         "text"
                      else
@@ -68,7 +68,7 @@ view props model =
                 []
             , label [ class "show", for showId ] [ text "show" ]
             , input
-                [ type' "checkbox"
+                [ type_ "checkbox"
                 , id showId
                 , checked model.showclear
                 , onCheck SetShowclear
